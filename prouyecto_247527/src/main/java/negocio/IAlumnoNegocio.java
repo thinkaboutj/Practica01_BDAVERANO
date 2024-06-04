@@ -25,5 +25,9 @@ public interface IAlumnoNegocio {
     AlumnoDTO obtenerAlumnoPorId(int idAlumno) throws NegocioException;
 
     AlumnoDTO editarAlumno(AlumnoDTO alumnoDTO) throws NegocioException;
+    
+    List<AlumnoDTO> buscarAlumnosTablaSig(int i) throws NegocioException;
+    
+    
 
 }

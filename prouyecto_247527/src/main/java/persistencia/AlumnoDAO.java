@@ -30,29 +30,29 @@ public class AlumnoDAO implements IAlumnoDAO {
         try {
             List<Alumno> alumnosLista = null;
 
-            try (Connection conexion = this.conexionBD.crearConexion()) {
-                String codigoSQL = "SELECT idAlumno, nombres, apellidoPaterno, apellidoMaterno, eliminado, activo FROM alumnos";
-                Statement comandoSQL = conexion.createStatement();
-                ResultSet resultado = comandoSQL.executeQuery(codigoSQL);
-                while (resultado.next()) {
-                    if (alumnosLista == null) {
-                        alumnosLista = new ArrayList<>();
-                    }
-                    Alumno alumno = this.convertirAEntidad(resultado);
-                    alumnosLista.add(alumno);
+            Connection conexion = this.conexionBD.crearConexion();
+            String codigoSQL = "SELECT idAlumno, nombres, apellidoPaterno, apellidoMaterno, eliminado, activo FROM alumnos limit 5 offset 0";
+            Statement comandoSQL = conexion.createStatement();
+            ResultSet resultado = comandoSQL.executeQuery(codigoSQL);
+            while (resultado.next()) {
+                if (alumnosLista == null) {
+                    alumnosLista = new ArrayList<>();
                 }
+                Alumno alumno = this.convertirAEntidad(resultado);
+                alumnosLista.add(alumno);
             }
+            conexion.close();
             return alumnosLista;
         } catch (SQLException ex) {
             // hacer uso de Logger
             System.out.println(ex.getMessage());
-            throw new PersistenciaException("Ocurrió un error al leer la base de datos, inténtelo de nuevo y si el error persiste comuníquese con el encargado del sistema.");
+            throw new PersistenciaException("Ocurrió un error al leer la base de datos");
         }
     }
 
     @Override
     public Alumno convertirAEntidad(ResultSet resultado) throws PersistenciaException {
-         try {
+        try {
             int idAlumno = resultado.getInt("idAlumno");
             String nombres = resultado.getString("nombres");
             String apellidoPaterno = resultado.getString("apellidoPaterno");
@@ -65,44 +65,78 @@ public class AlumnoDAO implements IAlumnoDAO {
             System.out.println(ex.getMessage());
             throw new PersistenciaException("Error al convertir el resultado a entidad.");
         }
-        
+
     }
 
     @Override
     public Alumno insertar(Alumno alumno) throws PersistenciaException {
         String codigoSQL = "INSERT INTO alumnos (nombres, apellidoPaterno, apellidoMaterno, eliminado, activo) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conexion = this.conexionBD.crearConexion();
-             PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL, Statement.RETURN_GENERATED_KEYS)) {
+        Connection conexion = null;
+        PreparedStatement comandoSQL = null;
+        ResultSet llavesGeneradas = null;
 
+        try {
+            // Crear una nueva conexión
+            conexion = this.conexionBD.crearConexion();
+            // Desactivar el modo de auto-commit
+            conexion.setAutoCommit(false);
+
+            // Preparar la sentencia SQL
+            comandoSQL = conexion.prepareStatement(codigoSQL, Statement.RETURN_GENERATED_KEYS);
             comandoSQL.setString(1, alumno.getNombre());
             comandoSQL.setString(2, alumno.getApellidoPaterno());
             comandoSQL.setString(3, alumno.getApellidoMaterno());
             comandoSQL.setBoolean(4, alumno.isEliminado());
             comandoSQL.setBoolean(5, alumno.isActivo());
 
+            // Ejecutar la actualización
             int filasAfectadas = comandoSQL.executeUpdate();
             if (filasAfectadas > 0) {
-                try (ResultSet llavesGeneradas = comandoSQL.getGeneratedKeys()) {
-                    if (llavesGeneradas.next()) {
-                        int idAlumno = llavesGeneradas.getInt(1);
-                        alumno.setIdAlumno(idAlumno);
-                        return alumno;
-                    }
+                // Obtener las llaves generadas
+                llavesGeneradas = comandoSQL.getGeneratedKeys();
+                if (llavesGeneradas.next()) {
+                    int idAlumno = llavesGeneradas.getInt(1);
+                    alumno.setIdAlumno(idAlumno);
+                    // Confirmar la transacción
+                    conexion.commit();
+                    return alumno;
                 }
             }
             throw new PersistenciaException("No se pudo insertar el alumno.");
         } catch (SQLException ex) {
-            // hacer uso de Logger
+
             System.out.println(ex.getMessage());
+            if (conexion != null) {
+                try {
+                    // Si ocurre una excepción, revertir la transacción
+                    conexion.rollback();
+                } catch (SQLException rollbackEx) {
+                    System.out.println(rollbackEx.getMessage());
+                }
+            }
             throw new PersistenciaException("Error al insertar el alumno en la base de datos.");
+        } finally {
+            // Cerrar recursos
+            try {
+                if (llavesGeneradas != null) {
+                    llavesGeneradas.close();
+                }
+                if (comandoSQL != null) {
+                    comandoSQL.close();
+                }
+                if (conexion != null) {
+                    conexion.close();
+                }
+            } catch (SQLException cierreEx) {
+                System.out.println(cierreEx.getMessage());
+            }
         }
     }
 
     @Override
     public Alumno obtenerPorid(int id) throws PersistenciaException {
-         String codigoSQL = "SELECT idAlumno, nombres, apellidoPaterno, apellidoMaterno, eliminado, activo FROM alumnos WHERE idAlumno = ?";
-        try (Connection conexion = this.conexionBD.crearConexion();
-             PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
+        String codigoSQL = "SELECT idAlumno, nombres, apellidoPaterno, apellidoMaterno, eliminado, activo FROM alumnos WHERE idAlumno = ?";
+        try (Connection conexion = this.conexionBD.crearConexion(); PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
 
             comandoSQL.setInt(1, id);
             try (ResultSet resultado = comandoSQL.executeQuery()) {
@@ -120,9 +154,8 @@ public class AlumnoDAO implements IAlumnoDAO {
 
     @Override
     public Alumno editar(Alumno alumno) throws PersistenciaException {
-         String codigoSQL = "UPDATE alumnos SET nombres = ?, apellidoPaterno = ?, apellidoMaterno = ?, eliminado = ?, activo = ? WHERE idAlumno = ?";
-        try (Connection conexion = this.conexionBD.crearConexion();
-             PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
+        String codigoSQL = "UPDATE alumnos SET nombres = ?, apellidoPaterno = ?, apellidoMaterno = ?, eliminado = ?, activo = ? WHERE idAlumno = ?";
+        try (Connection conexion = this.conexionBD.crearConexion(); PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
 
             comandoSQL.setString(1, alumno.getNombre());
             comandoSQL.setString(2, alumno.getApellidoPaterno());
@@ -142,12 +175,11 @@ public class AlumnoDAO implements IAlumnoDAO {
             throw new PersistenciaException("Error al actualizar el alumno en la base de datos.");
         }
     }
-    
+
     @Override
-     public boolean eliminar(int idAlumno) throws PersistenciaException {
+    public boolean eliminar(int idAlumno) throws PersistenciaException {
         String codigoSQL = "UPDATE alumnos SET eliminado = true WHERE idAlumno = ?";
-        try (Connection conexion = this.conexionBD.crearConexion();
-             PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
+        try (Connection conexion = this.conexionBD.crearConexion(); PreparedStatement comandoSQL = conexion.prepareStatement(codigoSQL)) {
 
             comandoSQL.setInt(1, idAlumno);
 

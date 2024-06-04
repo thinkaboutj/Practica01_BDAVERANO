@@ -3,6 +3,7 @@
  */
 package com.prouyecto_prubea;
 
+import negocio.IAlumnoNegocio;
 import negocio.NegocioException;
 import presentacion.CRUD;
 
@@ -16,6 +17,10 @@ public class Prouyecto_prubea {
   
 
     public static void main(String[] args) {
+        
+        CRUD crud = new CRUD(IAlumnoNegocio alumnoNegocio);
+        
+        crud.setVisible(true);
 
     }
 }

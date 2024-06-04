@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import negocio.AlumnoNegocio;
@@ -34,40 +35,32 @@ import utilerias.JButtonRenderer;
  * @author jesus
  */
 public class CRUD extends javax.swing.JFrame {
-    
-       private int pagina = 1;
+
+    private int pagina = 1;
     private final int LIMITE = 2;
     private IAlumnoNegocio alumnoNegocio;
+    private int i = 0;
 
     /**
      * Creates new form CRUD
      */
-    public CRUD() {
+    public CRUD(IAlumnoNegocio alumnoNegocio) {
         initComponents();
-        cargarConfiguracionInicialTablaAlumnos();
-        
-    }
-    
-     /**
-     * Creates new form FrmCRUD
-     *
-     * @param alumnoNegocio
-     */
-    public CRUD(IAlumnoNegocio alumnoNegocio) throws NegocioException {
-        initComponents();
-
         this.alumnoNegocio = alumnoNegocio;
-    }
- private void cargarMetodosIniciales() throws NegocioException {
-        this.cargarConfiguracionInicialPantalla();
-        this.cargarConfiguracionInicialTablaAlumnos();
-        this.cargarAlumnosEnTabla();
+        this.cargarMetodosIniciales();
     }
 
-    private void cargarConfiguracionInicialPantalla() {
-        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    
+    private void cargarMetodosIniciales() {
+        try {
+            this.cargarConfiguracionInicialTablaAlumnos();
+            this.cargarAlumnosEnTabla();
+        } catch (NegocioException ex) {
+            Logger.getLogger(CRUD.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
+  
     private void cargarConfiguracionInicialTablaAlumnos() {
         ActionListener onEditarClickListener = new ActionListener() {
             final int columnaId = 0;
@@ -185,12 +178,12 @@ public class CRUD extends javax.swing.JFrame {
     }
 
     private void cargarAlumnosEnTabla() throws NegocioException {
-        List<AlumnoDTO> alumnos = alumnoNegocio.buscarAlumnosTabla();
-        int inicio = (pagina - 1) * LIMITE;
-        int fin = Math.min(inicio + LIMITE, alumnos.size());
-        List<AlumnoDTO> alumnosPaginados = alumnos.subList(inicio, fin);
-        // Ahora, actualiza la tabla con la lista de alumnosPaginados
-        this.llenarTablaAlumnos(alumnosPaginados); // Utiliza la lista alumnosPaginados aquí
+        try {
+            List<AlumnoDTO> alumnos = this.alumnoNegocio.buscarAlumnosTabla();
+            this.llenarTablaAlumnos(alumnos);
+        } catch (NegocioException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Información", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -345,11 +338,11 @@ public class CRUD extends javax.swing.JFrame {
         if (pagina > 1) {
             pagina--;
             lblPagina.setText("Página " + pagina); // Actualiza el texto del JLabel
-             try {
-                 cargarAlumnosEnTabla();
-             } catch (NegocioException ex) {
-                 Logger.getLogger(CRUD.class.getName()).log(Level.SEVERE, null, ex);
-             }
+            try {
+                cargarAlumnosEnTabla();
+            } catch (NegocioException ex) {
+                Logger.getLogger(CRUD.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }//GEN-LAST:event_btnAtrasActionPerformed
 
@@ -375,7 +368,7 @@ public class CRUD extends javax.swing.JFrame {
 
     private void btnNuevoRegistroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNuevoRegistroActionPerformed
         // TODO add your handling code here:
-         try {
+        try {
             registrarAlumno();
         } catch (NegocioException ex) {
             Logger.getLogger(CRUD.class.getName()).log(Level.SEVERE, null, ex);
@@ -417,8 +410,8 @@ public class CRUD extends javax.swing.JFrame {
                 // Crea una instancia de AlumnoDAO pasando la conexión como argumento
                 IAlumnoDAO alumnoDAO = (IAlumnoDAO) new AlumnoDAO(conexionBD);
                 // Crea una instancia de AlumnoNegocio pasando el DAO como argumento
-                IAlumnoNegocio alumnoNegocio = (IAlumnoNegocio) new AlumnoNegocio(alumnoDAO);
-                new CRUD().setVisible(true);
+                IAlumnoNegocio alumnoNegocio =  new AlumnoNegocio(alumnoDAO);
+                new CRUD( alumnoNegocio ).setVisible(true);
             }
         });
     }

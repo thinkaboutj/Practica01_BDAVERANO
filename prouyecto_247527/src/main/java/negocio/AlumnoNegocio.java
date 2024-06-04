@@ -111,4 +111,9 @@ public class AlumnoNegocio implements IAlumnoNegocio {
         }
     }
 
+    @Override
+    public List<AlumnoDTO> buscarAlumnosTablaSig(int i) throws NegocioException {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
 }
