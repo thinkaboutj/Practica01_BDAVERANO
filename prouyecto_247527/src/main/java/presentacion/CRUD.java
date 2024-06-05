@@ -50,7 +50,17 @@ public class CRUD extends javax.swing.JFrame {
         this.cargarMetodosIniciales();
     }
 
-    
+    public void iniciarDisabled() {
+
+        txtMaterno.disable();;
+        txtNombre.disable();;
+
+        txtPaterni.disable();;
+
+        cbEstatus.disable();;
+
+    }
+
     private void cargarMetodosIniciales() {
         try {
             this.cargarConfiguracionInicialTablaAlumnos();
@@ -60,7 +70,6 @@ public class CRUD extends javax.swing.JFrame {
         }
     }
 
-  
     private void cargarConfiguracionInicialTablaAlumnos() {
         ActionListener onEditarClickListener = new ActionListener() {
             final int columnaId = 0;
@@ -85,7 +94,7 @@ public class CRUD extends javax.swing.JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //Metodo para eliminar un alumno
-                eliminar();
+                eliminarBoton();
             }
         };
         int indiceColumnaEliminar = 6;
@@ -149,11 +158,22 @@ public class CRUD extends javax.swing.JFrame {
         int id = this.getIdSeleccionadoTablaAlumnos();
     }
 
-    private void eliminar() {
-        //Metodo para regresar el alumno seleccionado
-        int id = this.getIdSeleccionadoTablaAlumnos();
+   private void eliminarTabla(int seleccionado) {
+        try {
+            this.alumnoNegocio.eliminarAlumno(seleccionado);
+        } catch (NegocioException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "datos.", JOptionPane.ERROR_MESSAGE);
+        }
     }
-
+   
+   public void eliminarBoton(){
+       int id = this.getIdSeleccionadoTablaAlumnos();
+        eliminarTabla(id);
+        this.i = 0;
+        cargarMetodosIniciales();
+   
+   }
+   
     private void llenarTablaAlumnos(List<AlumnoDTO> alumnosLista) {
         DefaultTableModel modeloTabla = (DefaultTableModel) this.tblAlumnos.getModel();
 
@@ -217,13 +237,18 @@ public class CRUD extends javax.swing.JFrame {
         jPanel1.setBackground(new java.awt.Color(204, 204, 204));
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
+        txtMaterno.setEnabled(false);
         txtMaterno.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtMaternoActionPerformed(evt);
             }
         });
         jPanel1.add(txtMaterno, new org.netbeans.lib.awtextra.AbsoluteConstraints(420, 80, 150, -1));
+
+        txtNombre.setEnabled(false);
         jPanel1.add(txtNombre, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 80, 150, -1));
+
+        txtPaterni.setEnabled(false);
         jPanel1.add(txtPaterni, new org.netbeans.lib.awtextra.AbsoluteConstraints(240, 80, 150, -1));
 
         jLabel1.setForeground(new java.awt.Color(0, 0, 0));
@@ -240,6 +265,7 @@ public class CRUD extends javax.swing.JFrame {
 
         cbEstatus.setForeground(new java.awt.Color(0, 0, 0));
         cbEstatus.setText("Activo");
+        cbEstatus.setEnabled(false);
         cbEstatus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cbEstatusActionPerformed(evt);
@@ -287,6 +313,11 @@ public class CRUD extends javax.swing.JFrame {
         jPanel1.add(btnSiguiente, new org.netbeans.lib.awtextra.AbsoluteConstraints(690, 510, -1, -1));
 
         btnGuardar.setText("Guardar");
+        btnGuardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGuardarActionPerformed(evt);
+            }
+        });
         jPanel1.add(btnGuardar, new org.netbeans.lib.awtextra.AbsoluteConstraints(700, 70, -1, -1));
 
         btnAtras.setText("Atras");
@@ -337,7 +368,7 @@ public class CRUD extends javax.swing.JFrame {
         // TODO add your handling code here:
         if (pagina > 1) {
             pagina--;
-            lblPagina.setText("Página " + pagina); // Actualiza el texto del JLabel
+            lblPagina.setText("Página " + pagina);
             try {
                 cargarAlumnosEnTabla();
             } catch (NegocioException ex) {
@@ -368,12 +399,22 @@ public class CRUD extends javax.swing.JFrame {
 
     private void btnNuevoRegistroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNuevoRegistroActionPerformed
         // TODO add your handling code here:
+
+        txtNombre.setEnabled(true);
+        txtPaterni.setEnabled(true);
+        txtMaterno.setEnabled(true);
+
+        cbEstatus.setEnabled(true);
+    }//GEN-LAST:event_btnNuevoRegistroActionPerformed
+
+    private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
+        // TODO add your handling code here:
         try {
             registrarAlumno();
         } catch (NegocioException ex) {
             Logger.getLogger(CRUD.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_btnNuevoRegistroActionPerformed
+    }//GEN-LAST:event_btnGuardarActionPerformed
 
     /**
      * @param args the command line arguments
@@ -404,14 +445,15 @@ public class CRUD extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 // Crea una instancia de ConexionBD (o la implementación real que estés utilizando)
                 IConexionBD conexionBD = new ConexionBD();
                 // Crea una instancia de AlumnoDAO pasando la conexión como argumento
                 IAlumnoDAO alumnoDAO = (IAlumnoDAO) new AlumnoDAO(conexionBD);
                 // Crea una instancia de AlumnoNegocio pasando el DAO como argumento
-                IAlumnoNegocio alumnoNegocio =  new AlumnoNegocio(alumnoDAO);
-                new CRUD( alumnoNegocio ).setVisible(true);
+                IAlumnoNegocio alumnoNegocio = new AlumnoNegocio(alumnoDAO);
+                new CRUD(alumnoNegocio).setVisible(true);
             }
         });
     }
